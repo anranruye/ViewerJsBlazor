@@ -1,6 +1,6 @@
 # ViewerJsBlazor
 
-A blazor wrapper for Viewer.js JavaScript image viewer library.
+A blazor wrapper for [Viewer.js](https://github.com/fengyuanchen/viewerjs) JavaScript image viewer library.
 
 ## Installation
 
