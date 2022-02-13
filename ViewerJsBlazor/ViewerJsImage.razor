@@ -1,0 +1,89 @@
+﻿@using System.Text.Json
+@inject IJSRuntime Js
+@implements IAsyncDisposable
+
+<img @ref=_elementRef @attributes=AdditionalAttributes />
+
+@code {
+    ElementReference _elementRef;
+    JsonElement? _jsInstance;
+    object _options;
+    bool _optionsChanged;
+
+    [CascadingParameter]
+    public ViewerJsImageGroup Group { get; set; }
+
+    [Parameter]
+    public object Options { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IDictionary<string, object> AdditionalAttributes { get; set; }
+
+    async Task CreateJsInstance()
+    {
+        if (_jsInstance == null)
+        {
+            _jsInstance = await Js.InvokeAsync<JsonElement>("window.ViewerJsBlazor.create", _elementRef, _options);
+        }
+    }
+
+    async Task DestroyJsInstance()
+    {
+        if (_jsInstance != null)
+        {
+            await Js.InvokeVoidAsync("window.ViewerJsBlazor.destroy", _jsInstance.Value);
+            _jsInstance = null;
+        }
+    }
+
+    public async Task InvokeMethod(string methodName, params object[] paramters)
+    {
+        if (_jsInstance != null)
+        {
+            await Js.InvokeVoidAsync("window.ViewerJsBlazor.invokeMethod", _jsInstance.Value, methodName, paramters);
+        }
+        else if (Group != null)
+        {
+            await Group.InvokeMethod(methodName, paramters);
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        if (Group != null)
+        {
+            Group.Refresh();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_options != Options)
+        {
+            _optionsChanged = true;
+            _options = Options;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_optionsChanged && Group == null)
+        {
+            _optionsChanged = false;
+            await DestroyJsInstance();
+            await CreateJsInstance();
+        }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (Group == null)
+        {
+            await DestroyJsInstance();
+        }
+        else
+        {
+            Group.Refresh();
+        }
+    }
+}

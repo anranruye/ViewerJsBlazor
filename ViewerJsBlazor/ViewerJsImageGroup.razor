@@ -1,0 +1,85 @@
+﻿@using System.Text.Json
+@inject IJSRuntime Js
+@implements IAsyncDisposable
+
+<Element @ref=_elementComponent Type=@ElementType @attributes=AdditionalAttributes>
+    <CascadingValue Value=this>
+        @ChildContent
+    </CascadingValue>
+</Element>
+
+@code {
+    Element _elementComponent;
+    JsonElement? _jsInstance;
+    object _options;
+    bool _optionsChanged;
+
+    [Parameter]
+    public string ElementType { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public object Options { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IDictionary<string, object> AdditionalAttributes { get; set; }
+
+    async Task CreateJsInstance()
+    {
+        if (_jsInstance == null)
+        {
+            _jsInstance = await Js.InvokeAsync<JsonElement>("window.ViewerJsBlazor.create", _elementComponent.ElementRef, _options);
+        }
+    }
+
+    async Task DestroyJsInstance()
+    {
+        if (_jsInstance != null)
+        {
+            await Js.InvokeVoidAsync("window.ViewerJsBlazor.destroy", _jsInstance.Value);
+            _jsInstance = null;
+        }
+    }
+
+    public void Refresh()
+    {
+        if (_jsInstance != null)
+        {
+            _optionsChanged = true;
+        }
+    }
+
+    public async Task InvokeMethod(string methodName, params object[] paramters)
+    {
+        if (_jsInstance != null)
+        {
+            await Js.InvokeVoidAsync("window.ViewerJsBlazor.invokeMethod", _jsInstance.Value, methodName, paramters);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_options != Options)
+        {
+            _optionsChanged = true;
+            _options = Options;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_optionsChanged)
+        {
+            _optionsChanged = false;
+            await DestroyJsInstance();
+            await CreateJsInstance();
+        }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        await DestroyJsInstance();
+    }
+}
