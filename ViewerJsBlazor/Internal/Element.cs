@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Components.Rendering;
 using System.Collections.Generic;
 
-namespace ViewerJsBlazor
+namespace ViewerJsBlazor.Internal
 {
     public class Element : ComponentBase
     {
@@ -19,7 +19,14 @@ namespace ViewerJsBlazor
 
         protected override void BuildRenderTree(RenderTreeBuilder builder)
         {
-            builder.OpenElement(0, Type);
+            if (string.IsNullOrWhiteSpace(Type))
+            {
+                builder.OpenElement(0, "div");
+            }
+            else
+            {
+                builder.OpenElement(0, Type.Trim());
+            }
             builder.AddMultipleAttributes(1, AdditionalAttributes);
             builder.AddElementReferenceCapture(2, element => ElementRef = element);
             builder.AddContent(3, ChildContent);

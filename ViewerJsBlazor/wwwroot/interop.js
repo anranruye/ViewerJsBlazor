@@ -1,16 +1,15 @@
 ﻿window.ViewerJsBlazor = {
-    create: function (element, options) {
-        var viewer;
-        options = options || {};
-        viewer = new Viewer(element, options);
-        return DotNet.createJSObjectReference(viewer);
-    },
-    destroy: function (viewer) {
+    recreate: function (viewer, element, options, dotnetInstance) {
         viewer.destroy();
-        DotNet.disposeJSObjectReference(viewer);
+        return this.create(element, options, dotnetInstance);
     },
-    invokeMethod: function (viewer, methodName, params) {
-        params = params || [];
-        viewer[methodName].apply(viewer, params);
+    create: function (element, options, dotnetInstance) {
+        options = options || {};
+        if (dotnetInstance) {
+            options.ready = function () {
+                dotnetInstance.invokeMethodAsync("OnReady");
+            }
+        }
+        return new Viewer(element, options);
     }
 }
